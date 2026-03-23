@@ -9,6 +9,15 @@
             font-weight: bold;
             color: #444;
         }
+
+        #image {
+            width: 600px;
+            height: 1200;
+        }
+
+        .container {
+            display: flex;
+        }
     </style>
 
 </head>
@@ -21,10 +30,12 @@
 
     <p id="loading">Loading...</p>
 
-    <img id="image" src=""/>
+    <div class="container"> 
+        <img id="image" src=""/>
 
-    <pre id="output"></pre>
-
+        <pre id="output"></pre>
+    </div>
+    
     <script>
         async function sendImage() {
             const file = document.getElementById("imageInput").files[0];
@@ -37,7 +48,7 @@
             loading.style.display = "block";
             button.disabled = true;
             output.textContent = "";
-            img.src = ""
+            img.src = "";
 
             const formData = new FormData();
             formData.append("image", file);
@@ -50,10 +61,11 @@
             const data = await response.json();
             output.textContent =
                 JSON.stringify(data, null, 2);
-            img.src = data.image_url;
+            
 
             loading.style.display = "none";
             button.disabled = false;
+            img.src = data.image_url;
         }
     </script>
 </body>
