@@ -35,6 +35,40 @@
 
         <pre id="output"></pre>
     </div>
+
+    <div id="radio">
+        <!-- Radio Buttons for allergen filtering go here -->
+        <input type="checkbox" id="dairy" name="dairy" value="dairy">
+        <label for="dairy"> Dairy </label><br>
+        <input type="checkbox" id="celery" name="celery" value="celery">
+        <label for="celery"> Celery </label><br>
+        <input type="checkbox" id="gluten" name="gluten" value="gluten">
+        <label for="celery"> Gluten</label><br>
+        <input type="checkbox" id="tree nuts" name="tree nuts" value="tree nuts">
+        <label for="tree nuts"> Tree Nuts</label><br>
+        <input type="checkbox" id="crustacean" name="crustacean" value="crustacean">
+        <label for="crustacean"> Crustacean</label><br>
+        <input type="checkbox" id="eggs" name="eggs" value="eggs">
+        <label for="eggs"> Eggs</label><br>
+        <input type="checkbox" id="fish" name="fish" value="fish">
+        <label for="fish"> Fish</label><br>
+        <input type="checkbox" id="lupin" name="lupin" value="lupin">
+        <label for="lupin"> Lupin</label><br>
+        <input type="checkbox" id="mollusc" name="mollusc" value="mollusc">
+        <label for="mollusc"> Mollusc</label><br>
+        <input type="checkbox" id="mustard" name="mustard" value="mustard">
+        <label for="mustard"> Mustard</label><br>
+        <input type="checkbox" id="peanuts" name="peanuts" value="peanuts">
+        <label for="peanuts"> Peanuts</label><br>
+        <input type="checkbox" id="sesame" name="sesame" value="sesame">
+        <label for="sesame"> Sesame</label><br>
+        <input type="checkbox" id="soy" name="soy" value="soy">
+        <label for="soy"> Soy</label><br>
+        <input type="checkbox" id="sulphur dioxide" name="sulphur dioxide" value="sulphur dioxide">
+        <label for="sulphur dioxide"> Sulphur Dioxide</label><br>
+        <input type="checkbox" id="sulphites" name="sulphites" value="sulphites">
+        <label for="sulphites"> Sulphites</label><br>
+    </div>
     
     <script>
         async function sendImage() {
@@ -62,6 +96,7 @@
             output.textContent =
                 JSON.stringify(data, null, 2);
             
+            radio.style.display = "block";
 
             loading.style.display = "none";
             button.disabled = false;

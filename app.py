@@ -4,6 +4,7 @@ import os
 from flask import send_from_directory
 
 from ocr_engine import run_ocr
+from food_classification import get_allergens
 
 app = Flask(__name__, static_url_path="/static")
 
@@ -30,9 +31,11 @@ def ocr_endpoint():
     # 1. OCR
     text = run_ocr(filepath)
 
+    menu_allergens = get_allergens(text)
+
     # 4. Return everything to the frontend
     return jsonify({
-        "text": text,
+        "text": menu_allergens,
         "image_url": f"/uploads/{filename}"
     })
 
