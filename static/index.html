@@ -4,6 +4,16 @@
     <title>OCR Demo</title>
     
     <style>
+        * {
+            border-style: dotted;
+            border-width: 0.1rem;
+        }
+
+        #output {
+            display: flex;
+            flex-direction: column;
+        }
+
         #loading {
             display: none;
             font-weight: bold;
@@ -11,29 +21,59 @@
         }
 
         #image {
+            display: none;
             width: 600px;
             height: 1200;
         }
 
-        .container {
+        #filter {
+            display: none;
+        }
+
+        #radio {
+            display: none;
+        }
+
+        .flex-container {
             display: flex;
+        }
+
+        .dish-card {
+            /* border-left: 5px solid transparent; */
+            font-family: sans-serif;
+        }
+
+        .dish-safe {
+            background-color: #e6f4ea;
+            border-left-color: #34a853;
+            color: #1a3c25;
+        }
+
+        .dish-unsafe {
+            background-color: #fce8e6;
+            border-left-color: #ea4335;
+            color: #5c1a1a;
+        }
+
+        .allergen-warning {
+            font-size: 0.85em;
+            margin-top: 1em;
         }
     </style>
 
 </head>
 <body>
-    <h1>Upload an Image</h1>
+    <h1></h1>
 
     <input type="file" id="imageInput">
     <button id="button" onclick="sendImage()">Run OCR</button>
+    <button id="filter" onclick="filter()">Filter</button>
     
-
     <p id="loading">Loading...</p>
 
     <div class="container"> 
         <img id="image" src=""/>
-
-        <pre id="output"></pre>
+        <div id="output"></div>
     </div>
 
     <div id="radio">
@@ -71,18 +111,24 @@
     </div>
     
     <script>
+        let ocrData = null; //store the output here
+        const output = document.getElementById("output");
+
         async function sendImage() {
             const file = document.getElementById("imageInput").files[0];
             if (!file) return;
 
             const loading = document.getElementById("loading");
             const button = document.getElementById("button");
-            const output = document.getElementById("output");
+            const filter = document.getElementById("filter");
+            const radio = document.getElementById("radio");
             const img = document.getElementById("image");
+
+            img.style.display = "none";
+            img.src = "";
             loading.style.display = "block";
             button.disabled = true;
             output.textContent = "";
-            img.src = "";
 
             const formData = new FormData();
             formData.append("image", file);
@@ -93,14 +139,82 @@
             });
 
             const data = await response.json();
-            output.textContent =
-                JSON.stringify(data, null, 2);
+            // Save data globally so other functions may access it 
+            ocrData = data;
+
+            dishes = data.text;
+
+            output.innerHTML = "";
+
+            for (var i = 0, len = dishes.length; i < len; i++) {
+                // Create a card element for each dish
+                const dishCard = document.createElement("div");
+                dishCard.classList.add("dish-card");
+
+                // Populate the card with dish info
+                dishCard.innerHTML = `
+                    <h3>${dishes[i].text}</h3>
+                    <p><strong>Allergens:</strong> ${dishes[i].allergens.join(", ") || "None"}</p>
+                `;
+                output.appendChild(dishCard);
+            }
             
+            filter.style.display = "block";
             radio.style.display = "block";
 
             loading.style.display = "none";
             button.disabled = false;
             img.src = data.image_url;
+            img.style.display = "block";
+        }
+
+        async function filter() {
+            console.log("pressed Filter");
+            var checkboxes = document.getElementById('radio').getElementsByTagName("input");
+            var user_allergens = [];
+            for (var i = 0, len = checkboxes.length; i < len; i++) {
+                if ( checkboxes[i].checked == true )
+                {
+                    user_allergens.push(checkboxes[i].name);
+                }
+            }
+
+            console.log(user_allergens);
+
+            let dishes = ocrData.text;
+            let filteredDishes = [];
+
+            console.log(dishes);
+
+            output.innerHTML = "";
+
+            for (var i = 0, len = dishes.length; i < len; i++) {
+                const hasAllergen = dishes[i].allergens.some(r=> user_allergens.includes(r))
+                        
+                // Create a card element for each dish
+                const dishCard = document.createElement("div");
+                dishCard.classList.add("dish-card");
+
+                // Apply colour based on allergen match
+                if (hasAllergen) {
+                    dishCard.classList.add("dish-unsafe");
+                } else {
+                    dishCard.classList.add("dish-safe");
+                }
+
+                // Populate the card with dish info
+                dishCard.innerHTML = `
+                    <h3>${dishes[i].text}</h3>
+                    <p><strong>Allergens:</strong> ${dishes[i].allergens.join(", ") || "None"}</p>
+                    <p class="allergen-warning">${hasAllergen ? "Contains allergens you selected" : "Safe for you"}</p>
+                `;
+
+                output.appendChild(dishCard);
+            }
+
+            // For each item in formdata  
+            
+            // if any of the allergens match any of the allergens from the array
         }
     </script>
 </body>

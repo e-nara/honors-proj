@@ -7,9 +7,13 @@ allowed = ["celery", "gluten", "crustacean", "eggs", "fish",
 def get_allergens(text):
     food_allergens = []
     for line in text:
+        allergen_array = []
+        num = random.randint(0,3)
+        for i in range(num):
+            allergen_array.append(random.choice(allowed))
         food_allergens.append({
             "text" : line,
-            "allergen" : random.choice(allowed)
+            "allergens" : allergen_array
         })
     return food_allergens
 
