@@ -1,11 +1,10 @@
 import easyocr
-from rapidfuzz import fuzz
-import cv2
-import re
-from sklearn.cluster import AgglomerativeClustering
+import cv2 as cv
 import numpy as np
+import os
 import re
-reader = easyocr.Reader(['en']) # this needs to run only once to load the model into memory
+
+# code from https://stackoverflow.com/questions/76723117/divide-an-image-into-tiles-based-on-text-structure-in-python-opencv
 
 def to_rect(box):
     xlist = [p[0] for p in box] #0 = x coordinates
@@ -21,58 +20,25 @@ def to_rect(box):
         "center_x": (min(xlist) + max(xlist)) / 2
     }
 
-def horizontally_adjacent(a, b):
-    # 1. Tight vertical alignment check
-    vertical_threshold = min(a["height"], b["height"]) * 0.5
-    same_row = abs(a["center_y"] - b["center_y"]) < vertical_threshold
-    
-    if not same_row:
-        return False
-
-    # 2. Horizontal overlap or small gap
-    left_a, right_a = a["left"], a["right"]
-    left_b, right_b = b["left"], b["right"]
-
-    # Horizontal gap between boxes
-    gap = max(0, max(left_b - right_a, left_a - right_b))
-
-    # Allow small gap (e.g., space between words)
-    small_gap_threshold = min(a["height"], b["height"]) * 3
-
-    return gap < small_gap_threshold
-
-def same_line(rect_a, rect_b):
-    avg_h = (rect_a["height"] + rect_b["height"]) / 2
-    return abs(rect_a["center_y"] - rect_b["center_y"]) < avg_h * 0.2
-
-def cluster_columns(line_rects, tolerance=50):
-    columns = []
-    for rect in line_rects:
-        placed = False
-        for col in columns:
-            if abs(rect["left"] - col["left"]) < tolerance:
-                col["lines"].append(rect)
-                placed = True
-                break
-        if not placed:
-            columns.append({
-                "left": rect["left"],
-                "lines": [rect]
-            })
-    return columns
-
 
 def structure_data(result):
     structured = []
-    for bbox, text, conf in result:
+    for bbox, text in result:
         structured.append({
             "rect": to_rect(bbox),
-            "text": text,
-            "conf": conf
+            "text": text
         })
 
-    return structured    
+    return structured   
 
+def tokenize_alpha(text):
+    # keep only letters and spaces
+    cleaned = re.sub(r'[^A-Za-z\s]', '', text)
+    # collapse multiple spaces
+    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+    return cleaned
+
+LIST_OF_NON_MENU_KEYWORDS = ['.com', 'london', 'lunch', 'dinner', 'starter', 'main', 'dessert', 'cafe', 'please', 'service charge'] # expand l8r
 
 PRICE_PATTERN = re.compile(r"""
     ^\s*
@@ -83,136 +49,52 @@ PRICE_PATTERN = re.compile(r"""
     \s*$
 """, re.VERBOSE)
 
+def reject_non_menu_items(text):
+    if(len(text) > 2):
+        if not any(w in text.lower() for w in LIST_OF_NON_MENU_KEYWORDS):
+            # only return if the text contains no forbidden key substrings
+            return True
+    return False
 
-#k-means clustering for columns: only works for known number of columns
-#hierarchical clustering alternative
-#alternative: rule based
+def clean_menu_item(text):
+    # remove allergen codes like (G/D/N)
+    text = re.sub(r"\(([A-Za-z/]+)\)", "", text)
 
-def compute_line_gaps(lines):
-    gaps = []
-    for i in range(1, len(lines)):
-        prev_bottom = lines[i-1]["bottom"]
-        curr_top = lines[i]["top"]
-        gaps.append(curr_top - prev_bottom)
-    return gaps
+    # remove price-like codes such as E1.99, E3, + E1.99
+    text = re.sub(PRICE_PATTERN, "", text)
 
-def find_gap_threshold(gaps):
-    positive = [g for g in gaps if g > 0]
-    if not positive:
-        return 9999
-    median_gap = np.median(positive)
-    return median_gap * 1.2
+    # collapse extra spaces created by removals
+    text = re.sub(r"\s{2,}", " ", text).strip()
 
-def group_lines_into_items(lines):
-    gaps = compute_line_gaps(lines)
-    threshold = find_gap_threshold(gaps)
-
-    items = []
-    current_item = []
-
-    for i, line in enumerate(lines):
-        if i == 0:
-            current_item.append(line)
-            continue
-
-        if gaps[i-1] > threshold:
-            items.append(current_item)
-            current_item = [line]
-        else:
-            current_item.append(line)
-
-    items.append(current_item)
-    return items
-
+    return text
 
 def item_to_text(item):
     return " ".join(b["text"] for b in item)
 
-def create_lines(structured):
-    lines = []
-    for obj in structured:
-        # skip adding the text if it resembles a price
-        if PRICE_PATTERN.match(obj["text"]):
-            continue
 
-        placed = False
-        for line in lines:
-            if horizontally_adjacent(obj["rect"], line[-1]["rect"]):
-                #print(line[-1]["text"] + " | " + obj["text"] + " <- same line")
-                line.append(obj)
-                placed = True
-                break
-        if not placed:
-            lines.append([obj])
-    return lines
+path = "pariscafe1.jpg"
+assert os.path.exists(path)
 
-def clean_lines(lines):
-    lines_text = []
+def run_ocr(path):
+    #always a good idea to convert BGR to RGB when using OCR
+    img = cv.imread(path)
+    img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
 
-    for line in lines:
-        text = ""
-        for part in line:
-            text = text + part["text"] + " "
-        lines_text.append(text)
+    #read the text
+    reader = easyocr.Reader(['en'])
+    text_data = reader.readtext(img, paragraph=True, x_ths=0.5)     #in order ([box-coords], text, confidence)
 
-    return lines_text
+    #print(text_data)
 
-def line_to_rect(line):
-    left = min(obj["rect"]["left"] for obj in line)
-    right = max(obj["rect"]["right"] for obj in line)
-    top = min(obj["rect"]["top"] for obj in line)
-    bottom = max(obj["rect"]["bottom"] for obj in line)
+    rect_data = structure_data(text_data)
 
-    return {
-        "left": left,
-        "right": right,
-        "top": top,
-        "bottom": bottom,
-        "center_x": (left + right) / 2,
-        "center_y": (top + bottom) / 2,
-        "height": bottom - top,
-        "width": right - left,
-        "text": " ".join(obj["text"] for obj in line),
-        "parts": line   # keep original OCR objects
-    }
+    #print(rect_data)
 
-def tokenize_alpha(text):
-    # keep only letters and spaces
-    cleaned = re.sub(r'[^A-Za-z\s]', '', text)
-    # collapse multiple spaces
-    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
-    return cleaned
+    items = []
 
-LIST_OF_NON_MENU_KEYWORDS = ['.com', 'london'] # expand l8r
+    for para in rect_data:
+        items.append(para["text"])
 
-def reject_non_menu_items(text):
-    if not any(w in text.lower() for w in LIST_OF_NON_MENU_KEYWORDS):
-        # only return if the text contains no forbidden key substrings
-        return True
-    return False
+    non_menu = [t for t in items if reject_non_menu_items(t)]
 
-def run_ocr(filename):
-    result = reader.readtext(filename)
-    rect_data = structure_data(result)
-    lines = create_lines(rect_data)
-
-    # transform each line (a list of rects) into a single rect
-    # for easier processing
-    line_rects = [line_to_rect(line) for line in lines]
-
-    columns = cluster_columns(line_rects)
-
-    #sort columns by y coordinate to ensure they are in order reading top-bottom
-    for col in columns:
-        col["lines"].sort(key=lambda r: r["top"])
-    
-    lines = [] # create an array of dicts
-    for col in columns:
-        for l in col["lines"]:
-            lines.append(l)
-
-    items = group_lines_into_items(lines)
-    text_items = [item_to_text(item) for item in items]
-    non_menu = [t for t in text_items if reject_non_menu_items(t)]
-
-    return non_menu
+    return(non_menu)
