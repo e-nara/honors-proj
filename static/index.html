@@ -1,13 +1,60 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>OCR Demo</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Allergen Detector</title>
     
     <style>
-        * {
-            border-style: dotted;
-            border-width: 0.1rem;
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: system-ui, sans-serif;
+            background: #f5f5f3;
+            color: #1a1a1a;
+            min-height: 100vh;
+            padding: 1.5rem 1rem;
         }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        header p {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            border: 0.5px solid #e0e0e0;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .card h2 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #888;
+            margin-bottom: 1rem;
+        }
+
+        .container {
+            max-width: 680px;
+            margin: 0 auto;
+        }
+
+
 
         #output {
             display: flex;
@@ -63,51 +110,59 @@
 
 </head>
 <body>
-    <h1></h1>
+    <div class="container">
 
-    <input type="file" id="imageInput">
-    <button id="button" onclick="sendImage()">Run OCR</button>
-    <button id="filter" onclick="filter()">Filter</button>
-    
-    <p id="loading">Loading...</p>
+        <h1> Allergen Detector </h1>
+        <p> Upload a menu image to identify allergens in each dish </p>
 
-    <div class="container"> 
-        <img id="image" src=""/>
-        <div id="output"></div>
-    </div>
+        <div class="card">
+            <input type="file" id="imageInput">
+            <button id="button" onclick="sendImage()">Run OCR</button>
+            <button id="filter" onclick="filter()">Filter</button>
+        </div>
+        
+        <div id="radio" class="card">
+            <!-- Radio Buttons for allergen filtering go here -->
+            <input type="checkbox" id="dairy" name="dairy" value="dairy">
+            <label for="dairy"> Dairy </label><br>
+            <input type="checkbox" id="celery" name="celery" value="celery">
+            <label for="celery"> Celery </label><br>
+            <input type="checkbox" id="gluten" name="gluten" value="gluten">
+            <label for="celery"> Gluten</label><br>
+            <input type="checkbox" id="tree nuts" name="tree nuts" value="tree nuts">
+            <label for="tree nuts"> Tree Nuts</label><br>
+            <input type="checkbox" id="crustacean" name="crustacean" value="crustacean">
+            <label for="crustacean"> Crustacean</label><br>
+            <input type="checkbox" id="eggs" name="eggs" value="eggs">
+            <label for="eggs"> Eggs</label><br>
+            <input type="checkbox" id="fish" name="fish" value="fish">
+            <label for="fish"> Fish</label><br>
+            <input type="checkbox" id="lupin" name="lupin" value="lupin">
+            <label for="lupin"> Lupin</label><br>
+            <input type="checkbox" id="mollusc" name="mollusc" value="mollusc">
+            <label for="mollusc"> Mollusc</label><br>
+            <input type="checkbox" id="mustard" name="mustard" value="mustard">
+            <label for="mustard"> Mustard</label><br>
+            <input type="checkbox" id="peanuts" name="peanuts" value="peanuts">
+            <label for="peanuts"> Peanuts</label><br>
+            <input type="checkbox" id="sesame" name="sesame" value="sesame">
+            <label for="sesame"> Sesame</label><br>
+            <input type="checkbox" id="soy" name="soy" value="soy">
+            <label for="soy"> Soy</label><br>
+            <input type="checkbox" id="sulphur dioxide" name="sulphur dioxide" value="sulphur dioxide">
+            <label for="sulphur dioxide"> Sulphur Dioxide</label><br>
+            <input type="checkbox" id="sulphites" name="sulphites" value="sulphites">
+            <label for="sulphites"> Sulphites</label><br>
+        </div>
+        
+        <div id="loading">
+            <span class="spinner"></span> Scanning menu...
+        </div>
 
-    <div id="radio">
-        <!-- Radio Buttons for allergen filtering go here -->
-        <input type="checkbox" id="dairy" name="dairy" value="dairy">
-        <label for="dairy"> Dairy </label><br>
-        <input type="checkbox" id="celery" name="celery" value="celery">
-        <label for="celery"> Celery </label><br>
-        <input type="checkbox" id="gluten" name="gluten" value="gluten">
-        <label for="celery"> Gluten</label><br>
-        <input type="checkbox" id="tree nuts" name="tree nuts" value="tree nuts">
-        <label for="tree nuts"> Tree Nuts</label><br>
-        <input type="checkbox" id="crustacean" name="crustacean" value="crustacean">
-        <label for="crustacean"> Crustacean</label><br>
-        <input type="checkbox" id="eggs" name="eggs" value="eggs">
-        <label for="eggs"> Eggs</label><br>
-        <input type="checkbox" id="fish" name="fish" value="fish">
-        <label for="fish"> Fish</label><br>
-        <input type="checkbox" id="lupin" name="lupin" value="lupin">
-        <label for="lupin"> Lupin</label><br>
-        <input type="checkbox" id="mollusc" name="mollusc" value="mollusc">
-        <label for="mollusc"> Mollusc</label><br>
-        <input type="checkbox" id="mustard" name="mustard" value="mustard">
-        <label for="mustard"> Mustard</label><br>
-        <input type="checkbox" id="peanuts" name="peanuts" value="peanuts">
-        <label for="peanuts"> Peanuts</label><br>
-        <input type="checkbox" id="sesame" name="sesame" value="sesame">
-        <label for="sesame"> Sesame</label><br>
-        <input type="checkbox" id="soy" name="soy" value="soy">
-        <label for="soy"> Soy</label><br>
-        <input type="checkbox" id="sulphur dioxide" name="sulphur dioxide" value="sulphur dioxide">
-        <label for="sulphur dioxide"> Sulphur Dioxide</label><br>
-        <input type="checkbox" id="sulphites" name="sulphites" value="sulphites">
-        <label for="sulphites"> Sulphites</label><br>
+        <div class="container"> 
+            <img id="image" src=""/>
+            <div id="output"></div>
+        </div>
     </div>
     
     <script>
@@ -212,16 +267,6 @@
                 output.appendChild(dishCard);
             }
 
-            // For each item in formdata  
-            
-
-            object = 
-            {
-                "text": 'Lalalala',
-                "description": 'Lalala'
-            }
-
-            // if any of the allergens match any of the allergens from the array
         }
     </script>
 </body>
