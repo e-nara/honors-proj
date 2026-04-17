@@ -41,12 +41,10 @@ def tokenize_alpha(text):
 LIST_OF_NON_MENU_KEYWORDS = ['.com', 'london', 'lunch', 'dinner', 'starter', 'main', 'dessert', 'cafe', 'please', 'service charge'] # expand l8r
 
 PRICE_PATTERN = re.compile(r"""
-    ^\s*
-    [£$€EeLlIi{YS]?        # optional currency-like symbol
+    [£$€EeLlIi{YS]   # currency-like symbol
     \s*
-    \d+                 # digits
-    (\.\d{1,2})?        # optional decimal
-    \s*$
+    \d+               # digits
+    (\.\d{1,2})?      # optional decimal
 """, re.VERBOSE)
 
 def reject_non_menu_items(text):
@@ -57,14 +55,18 @@ def reject_non_menu_items(text):
     return False
 
 def clean_menu_item(text):
+    #print("items before clean", text)
     # remove allergen codes like (G/D/N)
     text = re.sub(r"\(([A-Za-z/]+)\)", "", text)
+    #print("text subbed bracket patterns: ", text)
 
     # remove price-like codes such as E1.99, E3, + E1.99
     text = re.sub(PRICE_PATTERN, "", text)
+    #print("text subbed price patterns: ", text)
 
     # collapse extra spaces created by removals
     text = re.sub(r"\s{2,}", " ", text).strip()
+    #print("text subbed extra space: ", text)
 
     return text
 
@@ -95,6 +97,11 @@ def run_ocr(path):
     for para in rect_data:
         items.append(para["text"])
 
+    #Dont bother cleaning non-menu items
     non_menu = [t for t in items if reject_non_menu_items(t)]
 
-    return(non_menu)
+    clean_items = [clean_menu_item(t) for t in non_menu]
+    clean_items = [t for t in clean_items if t.strip()] #remove empty strings
+    print(clean_items)
+
+    return(clean_items)
