@@ -38,7 +38,9 @@ def tokenize_alpha(text):
     cleaned = re.sub(r'\s+', ' ', cleaned).strip()
     return cleaned
 
-LIST_OF_NON_MENU_KEYWORDS = ['.com', 'london', 'lunch', 'dinner', 'starter', 'main', 'dessert', 'cafe', 'please', 'service charge'] # expand l8r
+LIST_OF_NON_MENU_KEYWORDS = ['.com', 'london', 'lunch', 'dinner', 'starter', 'main', 'dessert', 
+                             'cafe', 'please', 'service charge', 'specials', 'evening', 'specials', 
+                             'allergies', 'menu', 'allergies'] # expand l8r
 
 PRICE_PATTERN = re.compile(r"""
     [£$€EeLlIi{YS]   # currency-like symbol
@@ -54,10 +56,31 @@ def reject_non_menu_items(text):
             return True
     return False
 
+def reject_short_items(text):
+    #separate string into words. count number of words. if < 3 reject. 
+    split_text = text.split(" ")
+    if(len(split_text) >= 3):
+            return True
+    
+    return False
+
+def reject_bad_spacing(text):
+    split_text = text.split(" ")
+    count = 0
+    for word in split_text:
+        count += len(word)
+
+    avg_str_len = count/len(split_text)
+    print(text, "text avg str len", avg_str_len)
+    if(avg_str_len > 3):
+        return True
+    
+    return False
+
 def clean_menu_item(text):
     #print("items before clean", text)
     # remove allergen codes like (G/D/N)
-    text = re.sub(r"\(([A-Za-z/]+)\)", "", text)
+    text = re.sub(r"[\(\[]\s*[A-Za-z][A-Za-z\s,/\\|\[\]]*[\)\]]", "", text)
     #print("text subbed bracket patterns: ", text)
 
     # remove price-like codes such as E1.99, E3, + E1.99
@@ -80,12 +103,16 @@ assert os.path.exists(path)
 def run_ocr(path):
     #always a good idea to convert BGR to RGB when using OCR
     img = cv.imread(path)
+    img_copy = np.copy(img)
     img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
 
     #read the text
     reader = easyocr.Reader(['en'])
+    img_height = img.shape[0]
+    y_threshold = img_height * 0.000015
+    print(img_height, y_threshold)
     text_data = reader.readtext(img, paragraph=True, x_ths=0.5)     #in order ([box-coords], text, confidence)
-
+    visualize(text_data, img_copy)
     #print(text_data)
 
     rect_data = structure_data(text_data)
@@ -98,10 +125,38 @@ def run_ocr(path):
         items.append(para["text"])
 
     #Dont bother cleaning non-menu items
-    non_menu = [t for t in items if reject_non_menu_items(t)]
+    clean_items = [clean_menu_item(t) for t in items]
 
-    clean_items = [clean_menu_item(t) for t in non_menu]
+    clean_items = [t for t in clean_items if reject_non_menu_items(t)]
+
     clean_items = [t for t in clean_items if t.strip()] #remove empty strings
+    
+    #remove entries with less than 3 tokens
+    clean_items = [t for t in clean_items if reject_short_items(t)]
+
+    clean_items = [t for t in clean_items if reject_bad_spacing(t)]
+
+    clean_items = [t for t in clean_items if t.strip()] #remove empty strings
+
     print(clean_items)
+    for item in clean_items:
+        print(item)
 
     return(clean_items)
+
+def visualize(text_data, img):
+    viz_img = np.copy(img)
+    #visualize
+    for data in text_data:
+        # box, text
+        box, text = data
+        top_left, top_right, bottom_right, bottom_left = box
+
+        tl = [int(x) for x in top_left]
+        br = [int(x) for x in bottom_right]
+        cv.rectangle(viz_img, tl, br, (0, 255, 0), 4)
+        cv.putText(viz_img, text, br, cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+
+    #path = '/uploads/'
+    #cv.imwrite(os.path.join(path , 'viz_with_text.jpg'), viz_img)
+    cv.imwrite('viz_with_text.jpg', viz_img)

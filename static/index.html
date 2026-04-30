@@ -8,6 +8,19 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
+        button {
+            background-color: #34a853;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 1rem;
+        }
+
         body {
             font-family: system-ui, sans-serif;
             background: #f5f5f3;
@@ -123,19 +136,25 @@
             font-size: 0.85em;
             margin-top: 1em;
         }
+
+        #inputCard {
+            display: flex;
+            justify-content: space-between;
+
+        }
     </style>
 
 </head>
 <body>
     <div class="container">
-
-        <h1> Allergen Detector </h1>
+        <header>
+            <h1> Allergen Detector </h1>
         <p> Upload a menu image to identify allergens in each dish </p>
+        </header>
 
-        <div class="card">
+        <div class="card" id="inputCard">
             <input type="file" id="imageInput">
-            <button id="button" onclick="sendImage()">Run OCR</button>
-            <button id="filter" onclick="filter()">Filter</button>
+            <button id="button" onclick="sendImage()">Scan Menu</button>
         </div>
         
         <div id="radio" class="card">
@@ -171,6 +190,8 @@
             <input type="checkbox" id="sulphites" name="sulphites" value="sulphites">
             <label for="sulphites"> Sulphites</label><br>
         </div>
+
+        <button id="filter" onclick="filter()">Filter</button>
         
         <div id="loading">
             <div class="loader"></div> Scanning menu...
@@ -278,7 +299,7 @@
                 dishCard.innerHTML = `
                     <h3>${dishes[i].text}</h3>
                     <p><strong>Allergens:</strong> ${dishes[i].allergens.join(", ") || "None"}</p>
-                    <p class="allergen-warning">${hasAllergen ? "Contains allergens you selected" : "Safe for you"}</p>
+                    <p class="allergen-warning">${hasAllergen ? "Contains allergens you selected" : "Likely safe for you"}</p>
                 `;
 
                 output.appendChild(dishCard);
